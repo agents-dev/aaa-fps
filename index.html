@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#060a0f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>AAA FPS - COD Level Prototype</title>
+<script>
+  try{
+    window.__CAPTURE = new URLSearchParams(location.search).has('capture');
+    if(window.__CAPTURE) document.documentElement.dataset.capture='1';
+  }catch(e){}
+</script>
+<style>
+  html,body{margin:0;padding:0;overflow:hidden;background:#060a0f;color:#fff;font-family:system-ui,sans-serif;overscroll-behavior:none;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+  html[data-capture="1"] #modeMenu,
+  html[data-capture="1"] #modeMenuGear{display:none !important}
+  #ui{position:fixed;inset:0;pointer-events:none}
+  #crosshair{position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px}
+  #hud{position:absolute;left:20px;bottom:20px;font-size:14px;line-height:1.4;background:rgba(0,0,0,0.45);padding:10px 14px;border-radius:8px;backdrop-filter:blur(6px)}
+  #center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,10,15,0.85);flex-direction:column;pointer-events:auto;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  #center button{pointer-events:auto;padding:14px 28px;font-size:18px;background:#e63946;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;letter-spacing:0.5px;touch-action:manipulation}
+  #center h1{font-size:42px;margin:0 0 8px;letter-spacing:1px}
+  #center p{opacity:0.8;margin:0 0 18px;max-width:520px;text-align:center;line-height:1.5}
+  canvas{display:block;touch-action:none;width:100%!important;height:100%!important}
+  #qualityBadge{font-size:10px;letter-spacing:0.8px;opacity:0.55;font-weight:700}
+  @media(max-width:900px){#hud{left:12px;bottom:86px;transform:scale(0.92);transform-origin:left bottom} #center h1{font-size:28px} #center p{font-size:14px;padding:0 18px}}
+</style>
+  <script type="module" crossorigin src="/aaa-fps/assets/index-9FZW-l-R.js"></script>
+</head>
+<body>
+<div id="center">
+  <h1>AAA FPS PROTOTYPE</h1>
+  <p id="centerText">High-fidelity Three.js FPS — PBR materials, dynamic shadows, post FX, physical movement. Click to lock and play. WASD move, Shift sprint, Space jump, Mouse aim, Click shoot, R reload.</p>
+  <button id="playBtn">ENTER COMBAT</button>
+  <p style="font-size:12px;opacity:0.5;margin-top:12px">Prototype towards COD-level fidelity — iterative AAA pass. <span id="qualityBadge"></span></p>
+</div>
+<div id="ui">
+  <div id="crosshair"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1.2" fill="#fff"/><path d="M12 6v3M12 15v3M6 12h3M15 12h3" stroke="#fff" stroke-width="1.2" opacity="0.9"/></svg></div>
+  <div id="hud">
+    <div>HEALTH <span id="health">100</span> &nbsp;|&nbsp; AMMO <span id="ammo">30</span> / <span id="reserve">90</span></div>
+    <div style="font-size:12px;opacity:0.7">FPS <span id="fps">--</span> &nbsp;|&nbsp; <span id="status">READY</span> &nbsp;<span id="qualityBadgeHud" style="font-size:10px;opacity:0.55;letter-spacing:0.6px"></span></div>
+  </div>
+</div>
+<script>
+// Mobile hint swap: update centerText if touch detected
+try{
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints>0);
+  const isNarrow = window.innerWidth<900 || window.innerHeight<700;
+  if(isTouch && isNarrow){
+    const t=document.getElementById('centerText');
+    if(t) t.textContent='Mobile FPS — Drag left joystick to move, swipe right side to look, FIRE to shoot, R to reload, ▲ to jump. Tap ENTER COMBAT.';
+    const b=document.getElementById('playBtn');
+    if(b) b.textContent='ENTER COMBAT — TAP TO PLAY';
+  }
+}catch(e){}
+</script>
+</body>
+</html>
