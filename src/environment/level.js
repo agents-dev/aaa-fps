@@ -523,17 +523,22 @@ export function createLevel(scene){
   const sandMat=new THREE.MeshStandardMaterial({ color:0x8a7e6a, roughness:0.96, metalness:0.01 });
   function sandbagRow(pos, len, rot){
     const g=new THREE.Group(); g.position.set(pos[0],0,pos[2]); g.rotation.y=rot;
+    // MOBILE FPS: low tier uses BoxGeometry instead of Capsule (saves 60% triangles, same silhouette distance)
+    const useCapsule = QUALITY.tier !== 'low';
     for(let i=0;i<len;i++){
-      const bag=new THREE.Mesh(new THREE.CapsuleGeometry(0.28,0.62,4,10), sandMat);
-      bag.rotation.z=Math.PI/2; bag.position.set((i-len/2)*0.92 + (Math.random()-0.5)*0.08, 0.28 + (i%2)*0.32, (Math.random()-0.5)*0.12);
-      bag.scale.set(1,1,0.72); bag.castShadow=true; bag.receiveShadow=true; g.add(bag);
+      const bagGeo = useCapsule ? new THREE.CapsuleGeometry(0.28,0.62,4,10) : new THREE.BoxGeometry(0.62,0.36,0.34);
+      const bag=new THREE.Mesh(bagGeo, sandMat);
+      if(useCapsule) bag.rotation.z=Math.PI/2; else bag.rotation.y=(Math.random()-0.5)*0.15;
+      bag.position.set((i-len/2)*0.92 + (Math.random()-0.5)*0.08, 0.28 + (i%2)*0.32, (Math.random()-0.5)*0.12);
+      if(useCapsule) bag.scale.set(1,1,0.72); 
+      bag.castShadow=QUALITY.tier!=='low'; bag.receiveShadow=QUALITY.tier!=='low'; g.add(bag);
       const bag2=bag.clone(); bag2.position.y+=0.58; bag2.position.x+=0.46; g.add(bag2);
     }
     scene.add(g); g.updateMatrixWorld(true); const col=new THREE.Mesh(new THREE.BoxGeometry(len*0.92,0.9,0.65), new THREE.MeshStandardMaterial({visible:false})); col.position.copy(g.position); col.rotation.y=rot; col.visible=false; scene.add(col); g.userData.collider=new THREE.Box3().setFromObject(col); colliders.push(g);
     return g;
   }
-  // sandbag wall 12 bags stacked with collider (6x2 =12) + second wall 8 bags
-  sandbagRow([11.5,0,6.8], 6, 0.12); sandbagRow([-9.2,0,-2.2], 4, Math.PI/2);
+  // sandbag wall 12 bags stacked with collider (6x2 =12) + second wall 8 bags — MOBILE low: 1 wall only saves 8 capsules+Box tris
+  sandbagRow([11.5,0,6.8], 6, 0.12); if(QUALITY.tier !== 'low') sandbagRow([-9.2,0,-2.2], 4, Math.PI/2);
   // ammo crates stack 2 olive (stacked 2 high)
   {
     const matAmmoA=new THREE.MeshStandardMaterial({ color:0x6b7a4a, roughness:0.88, metalness:0.02 });
@@ -577,7 +582,7 @@ export function createLevel(scene){
   }
   // Extra clutter: pallets with sacks, cable reels
   const sackMat=new THREE.MeshStandardMaterial({ color:0x9a8d7a, roughness:0.92 });
-  for(let i=0;i<3;i++){ const sack=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.44,0.38), sackMat); sack.position.set(12.2+Math.random()*1.2, 0.22, -1.2+Math.random()*0.8); sack.rotation.y=Math.random()*0.6; sack.castShadow=QUALITY.tier!=='low'; sack.receiveShadow=QUALITY.tier!=='low'; scene.add(sack); }
+  for(let i=0;i<(QUALITY.tier==='low'?1:3);i++){ const sack=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.44,0.38), sackMat); sack.position.set(12.2+Math.random()*1.2, 0.22, -1.2+Math.random()*0.8); sack.rotation.y=Math.random()*0.6; sack.castShadow=QUALITY.tier!=='low'; sack.receiveShadow=QUALITY.tier!=='low'; scene.add(sack); }
   // Wave4 pallet clutter — 6 Euro pallets with crate stacks (harsh MAP 9.4->9.5 — yard read empty vs COD Shipment full)
   function makePallet(pos, rotY, stacked){
     const g=new THREE.Group(); g.position.set(pos[0],pos[1],pos[2]); g.rotation.y=rotY;

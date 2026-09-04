@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { QUALITY } from '../core/quality.js';
+const IS_LOW = QUALITY.tier === 'low';
 
 /**
  * AAA M4 - WEAPONS Specialist v3.2 - FINAL 9.2+ PASS
@@ -96,26 +98,28 @@ export function createWeapons(scene, camera, controls) {
   // metalness 0.88->0.92 with clearcoat 0.3 per spec - COD metal shine highlight pop
   // ========================================================
   function makeWearMask(){
+    // MOBILE FPS: low tier uses 128 canvas + 40% scratches/pitting (saves CPU init + GPU bump fetches)
+    const SZ = IS_LOW ? 128 : 256;
     const c = document.createElement('canvas');
-    c.width = 256; c.height = 256;
+    c.width = SZ; c.height = SZ;
     const g = c.getContext('2d');
     // neutral mid-grey 0x808080 for bumpMap neutral (no displacement)
-    g.fillStyle = '#808080'; g.fillRect(0,0,256,256);
+    g.fillStyle = '#808080'; g.fillRect(0,0,SZ,SZ);
     // micro pitting noise 2200 dots
-    for(let i=0;i<2200;i++){
-      const x = Math.random()*256, y=Math.random()*256, r=Math.random()*0.75+0.35;
+    for(let i=0;i<(IS_LOW?600:2200);i++){
+      const x = Math.random()*SZ, y=Math.random()*SZ, r=Math.random()*0.75+0.35;
       const v = Math.random()>0.5 ? 10 : -10;
       const a = 0.07 + Math.random()*0.05;
       g.fillStyle = `rgba(${128+v},${128+v},${128+v},${a})`;
       g.fillRect(x,y,r,r);
     }
-    // 120 scratch lines - procedural wear scratches 120 lines per spec (long horizontal biased like receiver wear)
-    for(let i=0;i<120;i++){
+    // 120 scratch lines desktop, 32 on low (saves CPU + detail)
+    for(let i=0;i<(IS_LOW?32:120);i++){
       g.lineWidth = Math.random()*0.9 + 0.32;
       g.globalAlpha = 0.16 + Math.random()*0.22;
       g.strokeStyle = Math.random()>0.5 ? 'rgba(228,228,228,0.95)' : 'rgba(62,62,62,0.9)';
       g.beginPath();
-      const x1 = Math.random()*256, y1 = Math.random()*256;
+      const x1 = Math.random()*SZ, y1 = Math.random()*SZ;
       const len = 16 + Math.random()*58;
       // 62% horizontal scratches (handling wear) else random angle
       const ang = Math.random()<0.62 ? (Math.random()<0.5?0:Math.PI) + (Math.random()-0.5)*0.44 : Math.random()*Math.PI*2;
@@ -129,29 +133,29 @@ export function createWeapons(scene, camera, controls) {
     g.lineWidth = 2.0;
     for(let e=0;e<4;e++){
       g.globalAlpha = 0.18 - e*0.03;
-      g.strokeRect(1+e,1+e,254-e*2,254-e*2);
+      g.strokeRect(1+e,1+e,SZ-2-e*2,SZ-2-e*2);
     }
     g.globalAlpha = 1;
-    // corner / edge chips 18 spots
-    for(let i=0;i<18;i++){
-      const x = Math.random()<0.5 ? Math.random()*14 : 242+Math.random()*14;
-      const y = Math.random()<0.5 ? Math.random()*14 : 242+Math.random()*14;
+    // corner / edge chips 18 spots desktop, 6 on low
+    for(let i=0;i<(IS_LOW?6:18);i++){
+      const x = Math.random()<0.5 ? Math.random()*14 : (SZ-14)+Math.random()*14;
+      const y = Math.random()<0.5 ? Math.random()*14 : (SZ-14)+Math.random()*14;
       g.fillStyle = `rgba(255,255,255,${0.15+Math.random()*0.18})`;
       g.beginPath(); g.arc(x,y, 1.1+Math.random()*2.4,0,Math.PI*2); g.fill();
       g.fillStyle = 'rgba(28,28,28,0.28)';
       g.beginPath(); g.arc(x+0.6,y+0.6,0.7+Math.random()*0.6,0,Math.PI*2); g.fill();
     }
     // wear gradient along handguard touch area (center strip lighter = worn)
-    const grad = g.createLinearGradient(0,0,256,0);
+    const grad = g.createLinearGradient(0,0,SZ,0);
     grad.addColorStop(0,'rgba(255,255,255,0.0)');
     grad.addColorStop(0.22,'rgba(255,255,255,0.07)');
     grad.addColorStop(0.48,'rgba(255,255,255,0.105)');
     grad.addColorStop(0.76,'rgba(255,255,255,0.06)');
     grad.addColorStop(1,'rgba(255,255,255,0.0)');
-    g.fillStyle = grad; g.fillRect(0,92,256,72);
+    g.fillStyle = grad; g.fillRect(0,Math.floor(SZ*0.36),SZ,Math.floor(SZ*0.28));
     // diagonal holster wear faint
     g.strokeStyle='rgba(255,255,255,0.06)'; g.lineWidth=0.6; g.globalAlpha=0.9;
-    for(let i=0;i<6;i++){ g.beginPath(); g.moveTo(0, 28+i*34); g.lineTo(256, 48+i*34); g.stroke(); }
+    for(let i=0;i<(IS_LOW?3:6);i++){ g.beginPath(); g.moveTo(0, Math.floor(SZ*0.11)+i*34); g.lineTo(SZ, Math.floor(SZ*0.19)+i*34); g.stroke(); }
     g.globalAlpha=1;
     const tex = new THREE.CanvasTexture(c);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -159,43 +163,47 @@ export function createWeapons(scene, camera, controls) {
     tex.needsUpdate = true;
     // bumpMap uses NoColorSpace
     tex.colorSpace = THREE.NoColorSpace;
+    tex.anisotropy = IS_LOW ? 1 : 4;
     return tex;
   }
   const wearMask = makeWearMask(); // second CanvasTexture 256 for wear mask 120 lines edge wear per spec
 
   function makeStarTexture(){
-    const c = document.createElement('canvas'); c.width=128; c.height=128;
+    // MOBILE FPS: low tier uses 64 canvas for star (saves memory, flash is 80ms burst anyway)
+    const SSZ = IS_LOW ? 64 : 128;
+    const c = document.createElement('canvas'); c.width=SSZ; c.height=SSZ;
     const g = c.getContext('2d'); g.clearRect(0,0,128,128);
-    g.translate(64,64);
+    g.clearRect(0,0,SSZ,SSZ);
+    g.translate(SSZ/2,SSZ/2);
     // horizontal/vertical beams
     g.fillStyle = 'rgba(255,244,190,1.0)';
-    g.fillRect(-64,-5,128,10); g.fillRect(-5,-64,10,128);
+    g.fillRect(-SSZ/2,-5,SSZ,10); g.fillRect(-5,-SSZ/2,10,SSZ);
     // diagonal beams thinner
-    g.save(); g.rotate(Math.PI/4); g.globalAlpha=0.78; g.fillRect(-50,-3,100,6); g.fillRect(-3,-50,6,100); g.restore();
+    g.save(); g.rotate(Math.PI/4); g.globalAlpha=0.78; g.fillRect(-SSZ*0.39,-3,SSZ*0.78,6); g.fillRect(-3,-SSZ*0.39,6,SSZ*0.78); g.restore();
     // diagonal second set 22.5 deg for 8-point star elongation
-    g.save(); g.rotate(Math.PI/8); g.globalAlpha=0.42; g.fillRect(-42,-1.5,84,3); g.restore();
-    g.save(); g.rotate(-Math.PI/8); g.globalAlpha=0.42; g.fillRect(-42,-1.5,84,3); g.restore();
+    g.save(); g.rotate(Math.PI/8); g.globalAlpha=0.42; g.fillRect(-SSZ*0.33,-1.5,SSZ*0.66,3); g.restore();
+    g.save(); g.rotate(-Math.PI/8); g.globalAlpha=0.42; g.fillRect(-SSZ*0.33,-1.5,SSZ*0.66,3); g.restore();
     // core bloom
-    const grd = g.createRadialGradient(0,0,0,0,0,18);
+    const grd = g.createRadialGradient(0,0,0,0,0,SSZ*0.14);
     grd.addColorStop(0,'rgba(255,255,255,1)'); grd.addColorStop(0.35,'rgba(255,244,190,1)'); grd.addColorStop(0.72,'rgba(255,220,120,0.8)'); grd.addColorStop(1,'rgba(255,200,80,0)');
-    g.globalAlpha=1; g.fillStyle=grd; g.beginPath(); g.arc(0,0,18,0,Math.PI*2); g.fill();
-    g.fillStyle='white'; g.beginPath(); g.arc(0,0,7,0,Math.PI*2); g.fill();
+    g.globalAlpha=1; g.fillStyle=grd; g.beginPath(); g.arc(0,0,SSZ*0.14,0,Math.PI*2); g.fill();
+    g.fillStyle='white'; g.beginPath(); g.arc(0,0,SSZ*0.055,0,Math.PI*2); g.fill();
     const tex = new THREE.CanvasTexture(c); tex.needsUpdate=true; return tex;
   }
   const starTexture = makeStarTexture();
 
-  // PBR materials - metalness 0.92 + clearcoat 0.3 per spec, edge highlight via envMapIntensity tuned
-  const matReceiver = new THREE.MeshStandardMaterial({ color: 0x1e242a, roughness: 0.32, metalness: 0.92, envMapIntensity: 1.42, bumpMap: wearMask, bumpScale: 0.015, clearcoat: 0.30, clearcoatRoughness: 0.32 });
-  const matBarrelSteel = new THREE.MeshStandardMaterial({ color: 0x232a31, roughness: 0.28, metalness: 0.92, envMapIntensity: 1.45, bumpMap: wearMask, bumpScale: 0.008, clearcoat: 0.30, clearcoatRoughness: 0.28 });
-  const matAlu = new THREE.MeshStandardMaterial({ color: 0x2a3239, roughness: 0.34, metalness: 0.92, envMapIntensity: 1.32, bumpMap: wearMask, bumpScale: 0.009, clearcoat: 0.30, clearcoatRoughness: 0.30 });
-  const matHandguardMetal = new THREE.MeshStandardMaterial({ color: 0x1f252c, roughness: 0.36, metalness: 0.92, envMapIntensity: 1.28, bumpMap: wearMask, bumpScale: 0.015, clearcoat: 0.30, clearcoatRoughness: 0.34 });
-  const matPolymer = new THREE.MeshStandardMaterial({ color: 0x121519, roughness: 0.68, metalness: 0.05, clearcoat: 0.08, clearcoatRoughness: 0.72, bumpMap: wearMask, bumpScale: 0.004 });
-  const matPolymerGrip = new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.70, metalness: 0.05, bumpMap: wearMask, bumpScale: 0.004 });
-  const matMag = new THREE.MeshStandardMaterial({ color: 0x181c20, roughness: 0.62, metalness: 0.18, bumpMap: wearMask, bumpScale: 0.006 });
-  const matLaser = new THREE.MeshStandardMaterial({ color: 0x1a1f24, roughness: 0.48, metalness: 0.75, envMapIntensity: 1.1 });
+  // PBR materials - MOBILE FPS: low tier disables clearcoat/bump/ reduces envMapIntensity (saves GPU brdf loops + texture fetches, tile GPU)
+  const matReceiver = new THREE.MeshStandardMaterial({ color: 0x1e242a, roughness: 0.32, metalness: 0.92, envMapIntensity: IS_LOW?0.85:1.42, bumpMap: IS_LOW?null:wearMask, bumpScale: IS_LOW?0:0.015, clearcoat: IS_LOW?0:0.30, clearcoatRoughness: 0.32 });
+  const matBarrelSteel = new THREE.MeshStandardMaterial({ color: 0x232a31, roughness: 0.28, metalness: 0.92, envMapIntensity: IS_LOW?0.85:1.45, bumpMap: IS_LOW?null:wearMask, bumpScale: IS_LOW?0:0.008, clearcoat: IS_LOW?0:0.30, clearcoatRoughness: 0.28 });
+  const matAlu = new THREE.MeshStandardMaterial({ color: 0x2a3239, roughness: 0.34, metalness: 0.92, envMapIntensity: IS_LOW?0.82:1.32, bumpMap: IS_LOW?null:wearMask, bumpScale: IS_LOW?0:0.009, clearcoat: IS_LOW?0:0.30, clearcoatRoughness: 0.30 });
+  const matHandguardMetal = new THREE.MeshStandardMaterial({ color: 0x1f252c, roughness: 0.36, metalness: 0.92, envMapIntensity: IS_LOW?0.82:1.28, bumpMap: IS_LOW?null:wearMask, bumpScale: IS_LOW?0:0.015, clearcoat: IS_LOW?0:0.30, clearcoatRoughness: 0.34 });
+  const matPolymer = new THREE.MeshStandardMaterial({ color: 0x121519, roughness: 0.68, metalness: 0.05, clearcoat: IS_LOW?0:0.08, clearcoatRoughness: 0.72, bumpMap: IS_LOW?null:wearMask, bumpScale: IS_LOW?0:0.004 });
+  const matPolymerGrip = new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.70, metalness: 0.05, bumpMap: IS_LOW?null:wearMask, bumpScale: IS_LOW?0:0.004 });
+  const matMag = new THREE.MeshStandardMaterial({ color: 0x181c20, roughness: 0.62, metalness: 0.18, bumpMap: IS_LOW?null:wearMask, bumpScale: IS_LOW?0:0.006 });
+  const matLaser = new THREE.MeshStandardMaterial({ color: 0x1a1f24, roughness: 0.48, metalness: IS_LOW?0.35:0.75, envMapIntensity: IS_LOW?0.5:1.1 });
   const matLens = new THREE.MeshStandardMaterial({ color: 0x8a0f0f, roughness: 0.18, metalness: 0.45, emissive: 0x330000, emissiveIntensity: 0.6 });
-  // shell brass mat clearcoat per spec - brass needs highlight pop
-  const matBrass = new THREE.MeshStandardMaterial({ color: 0xc2a35a, roughness: 0.28, metalness: 0.82, envMapIntensity: 1.25, clearcoat: 0.38, clearcoatRoughness: 0.22 });
+  // shell brass mat clearcoat per spec - brass needs highlight pop (disable clearcoat on low)
+  const matBrass = new THREE.MeshStandardMaterial({ color: 0xc2a35a, roughness: 0.28, metalness: 0.82, envMapIntensity: IS_LOW?0.7:1.25, clearcoat: IS_LOW?0:0.38, clearcoatRoughness: 0.22 });
 
   // ========================================================
   // MODEL: 13 base + 3 extra detail meshes = 16 total - bevels break boxy silhouette
@@ -367,17 +375,22 @@ export function createWeapons(scene, camera, controls) {
     sightBase.castShadow = true; gunGroup.add(sightBase);
     const sightHood = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.018, 0.052), new THREE.MeshStandardMaterial({ color:0x0a0d10, roughness:0.62, metalness:0.55 }));
     sightHood.position.set(0, 0.020, -0.10); gunGroup.add(sightHood);
-    // lens — thin Physical with transmission + clearcoat for real reflection (envMap)
-    const lensMat = new THREE.MeshPhysicalMaterial({ color:0xffffff, transparent:true, opacity:0.42, roughness:0.02, metalness:0.0, transmission:0.92, thickness:0.005, clearcoat:1.0, clearcoatRoughness:0.08, envMapIntensity:1.35, side:THREE.DoubleSide });
+    // MOBILE FPS: low tier uses cheaper Standard without transmission (saves GPU transmission/clearcoat pass, tile GPU)
+    const lensMat = IS_LOW ? new THREE.MeshStandardMaterial({ color:0xd0e4ff, transparent:true, opacity:0.35, roughness:0.18, metalness:0.15, side:THREE.DoubleSide }) : new THREE.MeshPhysicalMaterial({ color:0xffffff, transparent:true, opacity:0.42, roughness:0.02, metalness:0.0, transmission:0.92, thickness:0.005, clearcoat:1.0, clearcoatRoughness:0.08, envMapIntensity:1.35, side:THREE.DoubleSide });
     const lens = new THREE.Mesh(new THREE.PlaneGeometry(0.024, 0.016), lensMat);
     lens.position.set(0, 0.020, -0.075); lens.rotation.y = Math.PI; // face rear
     gunGroup.add(lens);
-    const lensBack = new THREE.Mesh(new THREE.PlaneGeometry(0.024, 0.016), lensMat.clone());
-    lensBack.material.opacity = 0.28; lensBack.position.set(0, 0.020, -0.125); gunGroup.add(lensBack);
+    if(!IS_LOW){
+      const lensBack = new THREE.Mesh(new THREE.PlaneGeometry(0.024, 0.016), lensMat.clone());
+      lensBack.material.opacity = 0.28; lensBack.position.set(0, 0.020, -0.125); gunGroup.add(lensBack);
+    }
     const dot = new THREE.Mesh(new THREE.CircleGeometry(0.0018, 8), new THREE.MeshBasicMaterial({ color:0xff1a1a, transparent:true, opacity:0.95 }));
     dot.position.set(0, 0.020, -0.074); gunGroup.add(dot);
-    const dotGlow = new THREE.Mesh(new THREE.CircleGeometry(0.0032, 8), new THREE.MeshBasicMaterial({ color:0xff3a3a, transparent:true, opacity:0.22, blending:THREE.AdditiveBlending, depthWrite:false }));
-    dotGlow.position.set(0, 0.020, -0.0735); gunGroup.add(dotGlow);
+    // MOBILE: skip dotGlow additive on low (saves overdraw)
+    if(!IS_LOW){
+      const dotGlow = new THREE.Mesh(new THREE.CircleGeometry(0.0032, 8), new THREE.MeshBasicMaterial({ color:0xff3a3a, transparent:true, opacity:0.22, blending:THREE.AdditiveBlending, depthWrite:false }));
+      dotGlow.position.set(0, 0.020, -0.0735); gunGroup.add(dotGlow);
+    }
   }
   // ejection port interior — brass peek + bolt face (harsh: port flat black vs COD bolt)
   {
@@ -461,16 +474,19 @@ export function createWeapons(scene, camera, controls) {
   const flashStarMat = new THREE.MeshBasicMaterial({ map: starTexture, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, depthTest: false });
   const flashStar = new THREE.Mesh(flashStarGeo, flashStarMat);
   flashStar.position.copy(muzzleLocal); flashStar.position.z -= 0.022; flashStar.visible = false;
-  gunGroup.add(flashStar);
+  // MOBILE FPS: low tier skips star plane entirely (saves one additive draw call per flash, 80ms burst)
+  if(!IS_LOW) gunGroup.add(flashStar);
 
   // legacy alias for muzzleFlash to keep code paths (points to halo)
   const muzzleFlash = flashHalo;
   const flashMat = flashHaloMat;
 
-  const muzzleLight = new THREE.PointLight(0xfff0a0, 0, 5, 1.9);
+  // MOBILE FPS: low tier uses cheaper PointLight (intensity 1.8 distance 2.2, still visible but 56% less fragment cost)
+  const muzzleLight = new THREE.PointLight(0xfff0a0, 0, IS_LOW?2.2:5, 1.9);
   muzzleLight.intensity = 0;
   muzzleLight.decay = 1.9;
-  muzzleLight.distance = 5; // distance 5 per spec
+  muzzleLight.distance = IS_LOW?2.2:5;
+  // MOBILE low still needs flash illumination but at reduced radius; keep light but gated distance
   gunGroup.add(muzzleLight);
   muzzleLight.position.copy(muzzleLocal);
   let flashTime = 0;
@@ -580,18 +596,18 @@ export function createWeapons(scene, camera, controls) {
   }
 
   function doMuzzleFlash(){
-    // FX: 3 layers core+halo+star per spec - each with distinct scale/opacity, additive blending pops
-    flashHalo.visible = true; flashCore.visible = true; flashStar.visible = true;
-    flashHaloMat.opacity = 0.95; flashCoreMat.opacity = 0.98; flashStarMat.opacity = 0.93;
+    // FX: 3 layers desktop, 2 layers mobile (halo+core only) — still punchy but one less additive overdraw
+    flashHalo.visible = true; flashCore.visible = true; if(!IS_LOW) flashStar.visible = true;
+    flashHaloMat.opacity = 0.95; flashCoreMat.opacity = 0.98; if(!IS_LOW) flashStarMat.opacity = 0.93;
     flashHalo.rotation.z = Math.random()*Math.PI;
     flashCore.rotation.z = flashHalo.rotation.z + 0.6;
-    flashStar.rotation.z = flashHalo.rotation.z * 0.5; // star stays aligned but slight spin
-    muzzleLight.intensity = 3.5; // PointLight 3.5 per spec
-    muzzleLight.distance = 5; // distance 5 per spec
+    if(!IS_LOW) flashStar.rotation.z = flashHalo.rotation.z * 0.5;
+    muzzleLight.intensity = IS_LOW ? 1.8 : 3.5;
+    muzzleLight.distance = IS_LOW ? 2.2 : 5;
     flashTime = FLASH_DURATION;
     flashHalo.scale.set(0.58,0.58,1);
     flashCore.scale.set(0.52,0.52,1);
-    flashStar.scale.set(0.60,0.60,1);
+    if(!IS_LOW) flashStar.scale.set(0.60,0.60,1);
   }
 
   function tryShoot(){
@@ -883,18 +899,18 @@ export function createWeapons(scene, camera, controls) {
       const ease = t;
       flashHaloMat.opacity = ease * 0.95;
       flashCoreMat.opacity = ease * 0.98;
-      flashStarMat.opacity = ease * 0.93;
-      muzzleLight.intensity = 3.5 * ease; // PointLight 3.5 per spec
+      if(!IS_LOW) flashStarMat.opacity = ease * 0.93;
+      muzzleLight.intensity = (IS_LOW?1.8:3.5) * ease;
       const scH = 0.58 + (1-ease)*0.20;
       const scC = 0.52 + (1-ease)*0.14;
-      const scS = 0.60 + (1-ease)*0.24;
+      const scS = IS_LOW ? 0.60 : 0.60 + (1-ease)*0.24;
       flashHalo.scale.setScalar(scH);
       flashCore.scale.setScalar(scC);
-      flashStar.scale.setScalar(scS);
+      if(!IS_LOW) flashStar.scale.setScalar(scS);
       // star flicker rotation
-      flashStar.rotation.z += dt * 12;
+      if(!IS_LOW) flashStar.rotation.z += dt * 12;
       if (flashTime <= 0){
-        flashTime = 0; flashHalo.visible=false; flashCore.visible=false; flashStar.visible=false; flashHaloMat.opacity=0; flashCoreMat.opacity=0; flashStarMat.opacity=0; muzzleLight.intensity=0;
+        flashTime = 0; flashHalo.visible=false; flashCore.visible=false; if(!IS_LOW) flashStar.visible=false; flashHaloMat.opacity=0; flashCoreMat.opacity=0; if(!IS_LOW) flashStarMat.opacity=0; muzzleLight.intensity=0;
       }
     }
 
