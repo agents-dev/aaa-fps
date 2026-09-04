@@ -645,6 +645,7 @@ export function createWeapons(scene, camera, controls) {
     } catch {}
     const spreadBase = isAiming ? SPREAD_ADS : SPREAD_HIP;
     const spread = spreadBase + moveMod;
+    try{ camera.updateMatrixWorld(true); }catch{}
     camera.getWorldPosition(shootOrigin);
     camera.getWorldDirection(shootDir); shootDir.normalize();
     if (spread > 0){

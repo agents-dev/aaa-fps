@@ -34,12 +34,14 @@ export function createRenderer() {
   camera.rotation.order = 'YXZ'
 
   // --- Renderer core — filmic pipeline — MOBILE FPS: no MSAA on low tier (saves 30% fill) ---
+  // SwiftShader fix: preserveDrawingBuffer:true + powerPreference low-power on low + setPixelRatio 1 prevents ReadPixels hang
   const renderer = new THREE.WebGLRenderer({
     antialias: QUALITY.tier !== 'low',
-    powerPreference: 'high-performance',
+    powerPreference: QUALITY.tier === 'low' ? 'low-power' : 'high-performance',
     stencil: false,
     depth: true,
-    alpha: false
+    alpha: false,
+    preserveDrawingBuffer: true
   })
   const dprInitial = Math.min(window.devicePixelRatio || 1, QUALITY.dprCap)
   renderer.setPixelRatio(dprInitial)

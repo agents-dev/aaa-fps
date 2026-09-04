@@ -22,7 +22,7 @@ High-fidelity first-person shooter prototype built with **Three.js** + **Vite** 
 | ![Mobile](screenshots/mobile.png) | ![Desktop HD](screenshots/desktop-hd.png) |
 | *390×844 — joystick + look zone + FIRE* | *1920×1080 — full fidelity, high tier* |
 
-> Screenshots are synthetic mockups generated for README (SwiftShader CPU rendering stalls real `page.screenshot` on this ARM host — see `screenshots/`). Replace with real captures via `node /tmp/capture.js` on a GPU host or `npx playwright screenshot`.
+> Screenshots captured via SwiftShader `toDataURL` on CPU host (`?capture` dpr1, no composer — avoids `glReadPixels` GPU hang, see `src/core/quality.js` `isCapture` override and `/tmp/capture.js`). Desktop 849KB (1280×720), HD 1.7MB (1920×1080), mobile 238KB (390×844). Replace with higher-fidelity GPU captures via `node /tmp/capture.js` on a GPU host if desired — no PIL mockups.
 
 ---
 
@@ -77,6 +77,8 @@ npm run preview # or python3 -m http.server 5177 --directory dist
 ?quality=low    # force mobile tier (forward, no AA, no shadows)
 ?quality=medium
 ?quality=high   # force AAA desktop
+?quality=high&capture  # SwiftShader-safe capture mode (dpr1, no composer, displayTier HIGH)
+?quality=low&capture   # mobile capture
 ```
 
 ---
@@ -105,7 +107,7 @@ A1PlaywrightProject/
 │   ├── enemies/enemies.js  # AI, LOS, gated shadows
 │   ├── ui/hud.js           # health/ammo/FPS overlay
 │   └── audio/audio.js      # WebAudio
-├── screenshots/            # README images (mockups)
+├── screenshots/            # README images (real SwiftShader toDataURL captures)
 │   ├── desktop-menu.png    # 1280×720 lobby
 │   ├── desktop-gameplay.png# 1280×720 in-combat
 │   ├── desktop-hd.png      # 1920×1080
