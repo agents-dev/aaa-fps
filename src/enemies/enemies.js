@@ -1,4 +1,16 @@
 import * as THREE from 'three';
+
+// --- ZOMBIES HORDE variant (light patch, opt-in via src/modes/zombies.js) ---
+export const ZOMBIE_TINT = 0x8a9b86;
+export const ZOMBIE_EYE_COLOR = 0xff2200;
+export function getZombieStats(round){
+  const base = 45 + 10 * round;
+  const scaled = Math.floor(base * Math.pow(1.12, Math.max(0, round-1)));
+  const speed = Math.min(2.8, 1.2 + 0.06 * round);
+  return { health: scaled, speed, round };
+}
+export function isZombieVariant(group){ return !!(group && group.userData && group.userData.isZombie); }
+
 import { QUALITY } from '../core/quality.js';
 const IS_LOW = QUALITY.tier === 'low';
 

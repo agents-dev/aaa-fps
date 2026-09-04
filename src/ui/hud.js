@@ -300,6 +300,32 @@ export function createHUD(controls, weapons){
       crossArms.wrap.style.transform='translate(-50%,-50%) scale('+(1+breath)+')';
     }
   }
+  
+  // --- ZOMBIE HUD EXTENSION (COD WaW/BO style) - light patch, opt-in ---
+  // zombies.js also creates its own HUD; this ensures HUD hooks exist even if zombies.js loaded standalone
+  function ensureZombieHUD(){
+    if(document.getElementById('zombieHUD')) return document.getElementById('zombieHUD');
+    const hudWrap = document.createElement('div');
+    hudWrap.id='zombieHUD';
+    hudWrap.style.cssText='position:absolute;left:14px;top:14px;z-index:6;pointer-events:none;font-family:system-ui,sans-serif;';
+    const rEl=document.createElement('div'); rEl.id='zRound'; rEl.style.cssText='font-size:18px;font-weight:900;letter-spacing:1.2px;color:#ff3b3b;text-shadow:0 2px 8px rgba(0,0,0,0.85),0 0 12px rgba(255,60,60,0.45);'; rEl.textContent='ROUND 1';
+    const lEl=document.createElement('div'); lEl.id='zLeft'; lEl.style.cssText='font-size:13px;font-weight:800;letter-spacing:0.6px;color:#fff;margin-top:4px;text-shadow:0 1px 4px rgba(0,0,0,0.9);'; lEl.textContent='ZOMBIES LEFT: 0';
+    const pEl=document.createElement('div'); pEl.id='zPoints'; pEl.style.cssText='font-size:13px;font-weight:800;letter-spacing:0.6px;color:#7CFF7A;margin-top:2px;text-shadow:0 1px 4px rgba(0,0,0,0.9);'; pEl.textContent='POINTS: 0';
+    hudWrap.append(rEl,lEl,pEl);
+    const perks=document.createElement('div'); perks.id='zPerks'; perks.style.cssText='display:flex;gap:8px;margin-top:10px;';
+    function mkPerk(icon,label,color){ const d=document.createElement('div'); d.style.cssText='display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(14,18,24,0.82);border:1px solid '+color+';border-radius:6px;backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,0.45);'; const ic=document.createElement('div'); ic.style.cssText='width:22px;height:22px;border-radius:4px;background:'+color+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;'; ic.textContent=icon; const tx=document.createElement('div'); tx.style.cssText='font-size:10px;font-weight:800;letter-spacing:0.5px;color:'+color+';line-height:1;'; tx.innerHTML=label+'<br><span style="opacity:0.7;font-weight:600">'+(label==='JUGGER-NOG'?'HP+':'RELOAD+')+'</span>'; d.append(ic,tx); return d; }
+    const jg=mkPerk('♥','JUGGER-NOG','#e63946'); const sc=mkPerk('⚡','SPEED COLA','#2ec4b6'); jg.style.opacity='0.82'; sc.style.opacity='0.82'; jg.title='Juggernog - Placeholder perk'; sc.title='Speed Cola - Placeholder perk'; perks.append(jg,sc); hudWrap.appendChild(perks);
+    const ui=document.getElementById('ui')||document.body; ui.appendChild(hudWrap);
+    const banner=document.createElement('div'); banner.id='zRoundBanner'; banner.style.cssText='position:absolute;left:50%;top:32%;transform:translate(-50%,-50%) scale(0.85);z-index:9;pointer-events:none;font-size:64px;font-weight:900;letter-spacing:3px;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,0.85),0 0 22px rgba(255,60,60,0.55);opacity:0;transition:opacity 0.32s, transform 0.32s cubic-bezier(0.2,0.8,0.2,1);text-align:center;'; banner.textContent='ROUND 1'; ui.appendChild(banner); hudWrap._banner=banner; hudWrap._els={rEl,lEl,pEl};
+    return hudWrap;
+  }
+  function updateZombieHUD(roundVal, leftVal, pointsVal){ const h=document.getElementById('zombieHUD'); if(!h){ ensureZombieHUD(); return updateZombieHUD(roundVal,leftVal,pointsVal);} const rE=document.getElementById('zRound'); if(rE) rE.textContent='ROUND '+roundVal; const lE=document.getElementById('zLeft'); if(lE) lE.textContent='ZOMBIES LEFT: '+leftVal; const pE=document.getElementById('zPoints'); if(pE) pE.textContent='POINTS: '+pointsVal; }
+  function showZombieBanner(text){ const b=document.getElementById('zRoundBanner')|| (ensureZombieHUD()&&document.getElementById('zRoundBanner')); if(!b) return; b.textContent=text; b.style.opacity='1'; b.style.transform='translate(-50%,-50%) scale(1.08)'; setTimeout(()=>{ b.style.opacity='0'; b.style.transform='translate(-50%,-50%) scale(0.88)'; }, 1800); }
+  // expose for zombies.js interop
+  window.__ensureZombieHUD = ensureZombieHUD; window.__updateZombieHUD = updateZombieHUD; window.__showZombieBanner = showZombieBanner;
+  // inject minimal CSS for perks icons if not present
+  if(!document.getElementById('zombieHUDStyle')){ const s=document.createElement('style'); s.id='zombieHUDStyle'; s.textContent="#zombieHUD{font-family:system-ui,monospace} #zRoundBanner{pointer-events:none} #zPerks div{transition:opacity 0.2s}"; document.head.appendChild(s); }
+
   (function loop(){ requestAnimationFrame(loop); update(0.016); })();
   return { takeDamage, heal, getHealth:()=>health, update, addKill, spawnDamageNumber };
 }
