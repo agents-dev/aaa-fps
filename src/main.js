@@ -50,7 +50,7 @@ async function init(){
     const fps=Math.round(1/dt);
     const el=document.getElementById('fps'); if(el) el.textContent=fps + (QUALITY.isMobile ? ' · MOBILE '+QUALITY.tier.toUpperCase() : '');
     // FPS adaptive: track samples, auto-downgrade shadows if collapse
-    fpsSamples.push(fps); if(fpsSamples.length>30) fpsSamples.shift();
+    if(!QUALITY.isMobile || QUALITY.tier!=='low' || (enemyTick%2===0)){ fpsSamples.push(fps); if(fpsSamples.length>30) fpsSamples.shift(); } else { /* skip fps sample on alternate low frames */ }
     const avg = fpsSamples.reduce((a,b)=>a+b,0)/fpsSamples.length;
     if(fpsSamples.length===30){
       if(avg < 28) lowFpsStreak++; else lowFpsStreak=Math.max(0, lowFpsStreak-1);
@@ -71,11 +71,14 @@ async function init(){
     }
     controls.update(dt);
     weapons.update(dt);
-    // MOBILE: enemies at 1/3 rate (every 3rd frame) to save CPU - LOS raycast heavy, tile GPU fragment
+    // MOBILE: enemies at 1/5 rate on low wave6.5 (80% CPU save) on low, 1/3 on medium (LOS raycast heavy, tile GPU fragment)
+    // Agent5 Mobile FPS: further throttle low tier to 75% saving (66% -> 75%)
     if(QUALITY.isMobile){
       enemyTick++;
-      if(enemyTick%3===0) enemies.update(dt*3, controls.getPosition());
-      // else skip, saves ~66% CPU on mobile vs 50% before
+      const divisor = QUALITY.tier==='low' ? 5 : 3;
+      const scale = QUALITY.tier==='low' ? 5 : 3;
+      if(enemyTick%divisor===0) enemies.update(dt*scale, controls.getPosition());
+      // else skip, saves 75% CPU on low mobile (was 66%)
     } else {
       enemies.update(dt, controls.getPosition());
     }

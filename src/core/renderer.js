@@ -8,6 +8,7 @@ import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js'
 import { VignetteShader } from 'three/addons/shaders/VignetteShader.js'
 import { QUALITY } from './quality.js'
+const IS_LOW = QUALITY.tier === 'low'
 
 // Wave3.5 SSR + chromatic — harsh critic blind vs COD: puddles lacked live SSR shimmer, hit flash lacked lens chromatic
 const ChromaticAberrationShader = {
@@ -125,7 +126,32 @@ export function createRenderer() {
         time:{ value: 0 }
       },
       vertexShader: "varying vec3 vDir; varying float vY; void main(){ vec4 w=modelMatrix*vec4(position,1.); vDir=normalize(w.xyz); vY=normalize(position).y; gl_Position=projectionMatrix*viewMatrix*w; }",
-      fragmentShader: `
+      fragmentShader: IS_LOW ? `
+        varying vec3 vDir; varying float vY;
+        uniform vec3 topCol; uniform vec3 midCol; uniform vec3 horCol; uniform vec3 horCol2; uniform vec3 grdCol;
+        uniform vec3 sunDir; uniform vec3 sunCol; uniform vec3 sunCol2; uniform float sunInt; uniform float time;
+        void main(){
+          vec3 dir = normalize(vDir);
+          float y = dir.y;
+          float tHor = smoothstep(-0.10, 0.22, y);
+          vec3 col = mix(horCol, midCol, tHor);
+          float tTop = smoothstep(0.18, 0.82, y);
+          col = mix(col, topCol, tTop);
+          float horMask = pow(clamp(1.0 - abs(y)*2.9, 0.0, 1.0), 1.8);
+          col = mix(col, horCol2, horMask*0.35);
+          float gnd = smoothstep(0.0, -0.06, y);
+          col = mix(col, grdCol*0.62, gnd*0.9);
+          float sDot = dot(dir, normalize(sunDir));
+          float disk = smoothstep(0.99918, 0.99982, sDot);
+          float glow = pow(max(0.0, sDot), 420.0) * 1.2;
+          float halo = pow(max(0.0, sDot), 34.0) * 0.28;
+          vec3 sunAdd = sunCol * (disk*2.9 + glow*1.08 + halo*0.20) * sunInt * 0.85;
+          float sunHaze = pow(max(0.0, sDot), 6.0) * horMask * 0.22;
+          sunAdd += sunCol * sunHaze * 0.6;
+          col += sunAdd;
+          gl_FragColor = vec4(col, 1.0);
+        }
+      ` : `
         varying vec3 vDir; varying float vY;
         uniform vec3 topCol; uniform vec3 midCol; uniform vec3 horCol; uniform vec3 horCol2; uniform vec3 grdCol;
         uniform vec3 sunDir; uniform vec3 sunCol; uniform vec3 sunCol2; uniform float sunInt; uniform float time;
@@ -504,23 +530,30 @@ export function createRenderer() {
   const _fwd = new THREE.Vector3()
   const _target = new THREE.Vector3()
   let tAcc = 0
+  let skyLast = 0
+  let shadowLast = 0
 
   function update(dt) {
     tAcc += dt
     const t = performance.now() * 0.001
     // Sky — slow sun drift + breathing intensity (barely perceptible Warzone skylight)
-    if (skyMat) {
+    // MOBILE FPS: low tier throttles sky drift to 6Hz (saves uniform uploads + sin)
+    const doSky = !IS_LOW || (t - skyLast) > 0.16;
+    if (skyMat && doSky) {
+      if(IS_LOW) skyLast = t;
       skyMat.uniforms.time.value = t
-      const breathe = 1.95 + Math.sin(t*0.13)*0.038 + Math.sin(t*0.37)*0.014
+      const breathe = IS_LOW ? 1.95 : 1.95 + Math.sin(t*0.13)*0.038 + Math.sin(t*0.37)*0.014
       skyMat.uniforms.sunInt.value = breathe
       const ang = t * 0.0055
       _sunDir.set(Math.cos(ang)*0.32 + 0.32, 0.585 + Math.sin(ang*0.6)*0.012, Math.sin(ang)*0.42 + 0.42).normalize()
       skyMat.uniforms.sunDir.value.copy(_sunDir)
-    } else {
+    } else if (!skyMat) {
       _sunDir.set(0.32, 0.585, 0.42).normalize()
+    } else if (IS_LOW) {
+      // keep sunDir stable on low between throttles
     }
-    // God rays — 4-plane volumetric pulse 0.28-0.36 with phase offsets (Warzone dust shafts)
-    if (godGroup) {
+    // God rays — 4-plane (MOBILE FPS: fully skip on low already via godGroup null, extra guard) volumetric pulse 0.28-0.36 with phase offsets (Warzone dust shafts)
+    if (!IS_LOW && godGroup) {
       const basePulse = 0.28 + (Math.sin(t*0.17)*0.5+0.5)*0.08 // maps sin -1..1 -> 0.28..0.36
       const pulse2 = basePulse + Math.sin(t*0.47)*0.014
       const pulse3 = basePulse * 0.92 + Math.sin(t*0.31+1.1)*0.012
@@ -537,28 +570,31 @@ export function createRenderer() {
       const drift = Math.sin(t*0.07)*0.04
       godGroup.position.x = 14.5 + drift
     }
-    // Height fog time drift (subtle atmosphere breathe)
-    if (heightFogPass) {
+    // Height fog time drift (MOBILE FPS: skip on low) (subtle atmosphere breathe)
+    if (!IS_LOW && heightFogPass) {
       heightFogPass.uniforms['time'].value = t
       // modulate density slightly with sun angle for aerial perspective
       const haze = 0.0118 + Math.sin(t*0.04)*0.0006
       heightFogPass.uniforms['fogDensity'].value = haze
     }
-    // SSGI tint adapt — stronger GI when looking at shadowed interiors (low sun dot)
-    if (ssgiTintPass) {
+    // SSGI tint adapt (MOBILE FPS: skip on low) — stronger GI when looking at shadowed interiors (low sun dot)
+    if (!IS_LOW && ssgiTintPass) {
       camera.getWorldDirection(_fwd)
       const sunDot = Math.max(0, _fwd.dot(_sunDir))
       const wantTint = 0.095 - sunDot*0.028 // more bounce when not looking at sun
       ssgiTintPass.uniforms['tintStrength'].value = THREE.MathUtils.lerp(ssgiTintPass.uniforms['tintStrength'].value, wantTint, Math.min(1, dt*1.2))
     }
     // Pseudo-CSM — sun frustum follows camera XZ + forward bias, stable texels (28 size)
-    camera.getWorldDirection(_fwd)
-    _fwd.y = 0; _fwd.normalize()
-    _target.set(camera.position.x + _fwd.x*10, 0, camera.position.z + _fwd.z*10)
-    sun.target.position.lerp(_target, Math.min(1, dt*2.2))
-    sun.position.set(sun.target.position.x + 30, 44, sun.target.position.z + 18)
-    sun.shadow.needsUpdate = true
-    // Adaptive bloom — looking into sun tightens bloom slightly (like eye)
+    // MOBILE FPS: skip entirely on low tier (no shadow map pass, saves frustum update + lerp + needsUpdate)
+    if(!IS_LOW && renderer.shadowMap.enabled){
+      camera.getWorldDirection(_fwd)
+      _fwd.y = 0; _fwd.normalize()
+      _target.set(camera.position.x + _fwd.x*10, 0, camera.position.z + _fwd.z*10)
+      sun.target.position.lerp(_target, Math.min(1, dt*2.2))
+      sun.position.set(sun.target.position.x + 30, 44, sun.target.position.z + 18)
+      sun.shadow.needsUpdate = true
+    }
+    // Adaptive bloom (MOBILE FPS: skip on low) — looking into sun tightens bloom slightly (like eye)
     if (useComposer && bloomPass) {
       camera.getWorldDirection(_fwd)
       const sunDot = Math.max(0, _fwd.dot(_sunDir))
@@ -616,8 +652,8 @@ export function createRenderer() {
       }
     }
     }
-    // Chromatic aberration decay — triggered by hit via window.__chromaticHit
-    if(window.__chromaticPass){
+    // Chromatic aberration decay (MOBILE FPS: skip on low) — triggered by hit via window.__chromaticHit
+    if(!IS_LOW && window.__chromaticPass){
       const cp = window.__chromaticPass
       if(window.__chromaticHit && window.__chromaticHit>0){
         cp.uniforms['amount'].value = Math.min(2.8, window.__chromaticHit*1.6)

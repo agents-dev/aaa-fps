@@ -214,7 +214,7 @@ export function createLevel(scene){
   const matEmissiveBlue = new THREE.MeshStandardMaterial({ color:0xa8d8ff, emissive:0x4da3ff, emissiveIntensity:0.9, roughness:0.3 });
   const geoGround = new THREE.PlaneGeometry(80,80);
   const geoCrate = new THREE.BoxGeometry(1.05,1.05,1.05);
-  const geoCylBarrel = new THREE.CylinderGeometry(0.42,0.42,0.88,16);
+  const geoCylBarrel = new THREE.CylinderGeometry(0.42,0.42,0.88,QUALITY.tier==='low'?6:16);
   const ground = new THREE.Mesh(geoGround, matGround); ground.rotation.x=-Math.PI/2; ground.position.y=0; ground.receiveShadow=true; scene.add(ground); ground.updateMatrixWorld(true); ground.userData.collider=new THREE.Box3(new THREE.Vector3(-40,-0.2,-40), new THREE.Vector3(40,0,40)); colliders.push(ground);
   const wareGroup=new THREE.Group(); wareGroup.name='warehouse'; scene.add(wareGroup);
   function wareWall(pos,size,mat=matConcreteWall){ const m=box(pos,size,mat,true,true); wareGroup.add(m); addCollider(m); return m; }
@@ -306,9 +306,7 @@ export function createLevel(scene){
   jersey([0.2,0,8.2], Math.PI/2);
   jersey([-8.2,0,5.5], 0.45);
   jersey([15.5,0,-6.2], Math.PI/2);
-  jersey([-1.8,0,-4.5], 0);
-  jersey([24,0,-2.5], Math.PI/2);
-  jersey([24,0,0.4], Math.PI/2);
+  if(QUALITY.tier !== 'low'){ jersey([-1.8,0,-4.5], 0); jersey([24,0,-2.5], Math.PI/2); jersey([24,0,0.4], Math.PI/2); }
   for(let i=0;i<4;i++){ const h=box([ -0.9 + i*1.05, 0.55, 3.2],[1.0,1.1,0.95], matBarrier, true,true); scene.add(h); addCollider(h); }
   function watchTower(pos, hgt){ const legs=[[ -1.2,-1.2],[1.2,-1.2],[1.2,1.2],[-1.2,1.2]]; legs.forEach(([dx,dz])=>{ const leg=box([pos[0]+dx, hgt/2, pos[2]+dz],[0.22,hgt,0.22], matMetalGalv, true,true); scene.add(leg); addCollider(leg); }); for(let y=1.2;y<hgt;y+=1.6){ const b1=box([pos[0], y, pos[2]-1.2],[2.4,0.08,0.08], matMetalTrim,true,true); scene.add(b1); addCollider(b1); const b2=box([pos[0], y, pos[2]+1.2],[2.4,0.08,0.08], matMetalTrim,true,true); scene.add(b2); addCollider(b2); const b3=box([pos[0]-1.2, y, pos[2]],[0.08,0.08,2.4], matMetalTrim,true,true); scene.add(b3); addCollider(b3); const b4=box([pos[0]+1.2, y, pos[2]],[0.08,0.08,2.4], matMetalTrim,true,true); scene.add(b4); addCollider(b4); } const platform=box([pos[0], hgt, pos[2]],[3.1,0.22,3.1], matPallet, true,true); scene.add(platform); addCollider(platform); [[0,-1.45,2.9,0.08],[0,1.45,2.9,0.08],[-1.45,0,0.08,2.9],[1.45,0,0.08,2.9]].forEach(([dx,dz,sx,sz])=>{ const rail=box([pos[0]+dx, hgt+0.65, pos[2]+dz],[sx,0.08,sz], matMetalTrim, true,true); scene.add(rail); addCollider(rail); const rail2=box([pos[0]+dx, hgt+0.95, pos[2]+dz],[sx,0.08,sz], matMetalTrim, true,true); scene.add(rail2); addCollider(rail2); }); const roof=box([pos[0], hgt+1.45, pos[2]],[3.3,0.18,3.3], matRoofMetal,true,true); scene.add(roof); addCollider(roof); const lad1=box([pos[0]-1.1, hgt/2, pos[2]+1.6],[0.06,hgt,0.04], matMetalTrim,true,true); scene.add(lad1); addCollider(lad1); const lad2=box([pos[0]-0.6, hgt/2, pos[2]+1.6],[0.06,hgt,0.04], matMetalTrim,true,true); scene.add(lad2); addCollider(lad2); for(let y=0.6;y<hgt;y+=0.45){ const rung=box([pos[0]-0.85, y, pos[2]+1.6],[0.5,0.04,0.06], matMetalTrim,true,true); scene.add(rung); addCollider(rung); } if(QUALITY.tier !== 'low'){ const light=new THREE.PointLight(0xfff2c8, 18, 14, 1.8); light.position.set(pos[0], hgt+0.6, pos[2]); scene.add(light); } const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.18,10,10), new THREE.MeshStandardMaterial({ emissive:0xffe9a0, emissiveIntensity:2, color:0xfff5d0 })); lamp.position.set(pos[0], hgt+0.6, pos[2]); scene.add(lamp); }
   watchTower([26,0,-22], 6.2);
@@ -324,20 +322,20 @@ export function createLevel(scene){
   const eastPlat=box([28,0.85,7],[5.5,0.4,7], matConcreteDark,true,true); scene.add(eastPlat); addCollider(eastPlat);
   for(let i=0;i<4;i++){ const s=box([25.2+i*0.55, 0.18+i*0.21, 10.8],[0.5,0.14,1.6], matConcreteWall,true,true); scene.add(s); addCollider(s); }
   function crateStack(basePos, count, layout){ for(let i=0;i<count;i++){ let p=[basePos[0], basePos[1]+0.53+i*1.07, basePos[2]]; if(layout==='2x2' && i>=2) p[0]+=1.08; if(layout==='L' && i==2){ p[0]+=1.08; p[1]-=1.07; } const c=new THREE.Mesh(geoCrate, matCrate); c.position.set(p[0],p[1],p[2]); c.rotation.y=(Math.random()-0.5)*0.06; c.castShadow=true; c.receiveShadow=true; const strap1=new THREE.Mesh(new THREE.BoxGeometry(1.07,0.08,1.07), matMetalTrim); strap1.position.y=0.18; c.add(strap1); const strap2=strap1.clone(); strap2.position.y=-0.18; c.add(strap2); scene.add(c); addCollider(c); } }
-  crateStack([-2,0.53,16],3,'col'); crateStack([24,0.53,-10],4,'2x2'); crateStack([-10,0.53,12],2,'col'); crateStack([10.5,0.53,-2],2,'L'); crateStack([-16,0.53,-1],3,'col');
-  function barrel(pos, rust){ const m=new THREE.Mesh(geoCylBarrel, rust? matBarrelRust: matBarrel); m.position.set(pos[0], pos[1]+0.44, pos[2]); m.castShadow=true; m.receiveShadow=true; const ringGeo=new THREE.TorusGeometry(0.43,0.022,8,16); const ringMat=matMetalTrim; const r1=new THREE.Mesh(ringGeo, ringMat); r1.rotation.x=Math.PI/2; r1.position.y=0.22; m.add(r1); const r2=r1.clone(); r2.position.y=-0.22; m.add(r2); scene.add(m); addCollider(m); return m; }
+  crateStack([-2,0.53,16],QUALITY.tier==='low'?1:3,'col'); crateStack([24,0.53,-10],QUALITY.tier==='low'?2:4,'2x2'); crateStack([-10,0.53,12],QUALITY.tier==='low'?1:2,'col'); crateStack([10.5,0.53,-2],QUALITY.tier==='low'?1:2,'L'); crateStack([-16,0.53,-1],QUALITY.tier==='low'?1:3,'col');
+  function barrel(pos, rust){ const m=new THREE.Mesh(geoCylBarrel, rust? matBarrelRust: matBarrel); m.position.set(pos[0], pos[1]+0.44, pos[2]); m.castShadow=true; m.receiveShadow=true; const ringGeo=new THREE.TorusGeometry(0.43,0.022,QUALITY.tier==='low'?4:8,QUALITY.tier==='low'?6:16); const ringMat=matMetalTrim; const r1=new THREE.Mesh(ringGeo, ringMat); r1.rotation.x=Math.PI/2; r1.position.y=0.22; m.add(r1); const r2=r1.clone(); r2.position.y=-0.22; m.add(r2); scene.add(m); addCollider(m); return m; }
   barrel([10.2,0, -1.8], false); barrel([11.1,0,-1.6], true); barrel([10.6,0,-0.9], false); barrel([-6.2,0,-7.8], true); barrel([-5.3,0,-7.6], false); barrel([-20.5,0,-5.5], false); barrel([-20.5,0,-4.6], true); barrel([27.2,0,5.5], false);
   // --- 12 oil drum cluster with rust decal (texRustDecal) at [17,0,-2.5] 4x3 grid ---
   {
     const matDrumRustDecal = new THREE.MeshStandardMaterial({ map: texRustDecal, color:0xffffff, roughness:0.82, metalness:0.12, transparent:true });
     const clusterOrigin=[17,0,-2.5];
     let idx=0;
-    for(let rz=0;rz<3;rz++) for(let rx=0;rx<4;rx++){
+    for(let rz=0;rz<(QUALITY.tier==='low'?2:3);rz++) for(let rx=0;rx<(QUALITY.tier==='low'?2:4);rx++){
       const x=clusterOrigin[0]+ rx*0.95 - 1.42;
       const z=clusterOrigin[2]+ rz*0.95 - 0.95;
       const rust = (idx%3!==0);
       const m=new THREE.Mesh(geoCylBarrel, rust? matBarrelRust: matBarrel); m.position.set(x,0.44,z); m.rotation.y=(Math.random()-0.5)*0.18; m.castShadow=true; m.receiveShadow=true;
-      const ringGeo2=new THREE.TorusGeometry(0.43,0.022,8,16); const r1=new THREE.Mesh(ringGeo2, matMetalTrim); r1.rotation.x=Math.PI/2; r1.position.y=0.22; m.add(r1); const r2=r1.clone(); r2.position.y=-0.22; m.add(r2);
+      const ringGeo2=new THREE.TorusGeometry(0.43,0.022,QUALITY.tier==='low'?4:8,QUALITY.tier==='low'?6:16); const r1=new THREE.Mesh(ringGeo2, matMetalTrim); r1.rotation.x=Math.PI/2; r1.position.y=0.22; m.add(r1); const r2=r1.clone(); r2.position.y=-0.22; m.add(r2);
       // rust decal plane wrapped as cylinder decal
       if(rust){
         const decal=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.68), matDrumRustDecal); decal.position.set(0.43,0.06,0); decal.rotation.y=Math.PI/2; decal.rotation.z=(Math.random()-0.5)*0.2; m.add(decal);
@@ -351,7 +349,7 @@ export function createLevel(scene){
     }
   }
   function pallet(pos, rotY){ const g=new THREE.Group(); g.position.set(pos[0],pos[1],pos[2]); g.rotation.y=rotY; const base=new THREE.Mesh(new THREE.BoxGeometry(1.22,0.14,1.02), matPallet); base.position.y=0.09; base.castShadow=true; base.receiveShadow=true; g.add(base); for(let i=-0.42;i<=0.42;i+=0.28){ const slat=new THREE.Mesh(new THREE.BoxGeometry(1.22,0.02,0.11), matPallet); slat.position.set(0,0.16,i); g.add(slat); } for(let x of [-0.5,0,0.5]) for(let z of [-0.4,0.4]){ const b=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.08,0.14), matPallet); b.position.set(x,0.04,z); g.add(b); } scene.add(g); g.updateMatrixWorld(true); g.userData.collider=new THREE.Box3().setFromObject(g); colliders.push(g); return g; }
-  pallet([-2.1,0,14.8], 0.12); pallet([-10.2,0,10.8], 0.7); pallet([11.2,0,-3.2], -0.2); pallet([26.8,0.85,6.2], 0);
+  pallet([-2.1,0,14.8], 0.12); pallet([-10.2,0,10.8], 0.7); if(QUALITY.tier !== 'low'){ pallet([11.2,0,-3.2], -0.2); pallet([26.8,0.85,6.2], 0); }
   const shed=box([28,1.55,-8.5],[5.5,3.1,4.2], matConcreteWall, true,true); scene.add(shed); addCollider(shed);
   const shedRoof=box([28,3.28,-8.5],[5.9,0.22,4.6], matRoofMetal,true,true); scene.add(shedRoof); addCollider(shedRoof);
   const shedDoor=new THREE.Mesh(new THREE.PlaneGeometry(1.0,2.1), matMetalTrim); shedDoor.position.set(25.26,1.15,-8.5); shedDoor.rotation.y=Math.PI/2; shedDoor.receiveShadow=true; scene.add(shedDoor);
@@ -364,7 +362,7 @@ export function createLevel(scene){
   for(let z=-22;z<10;z+=3){ const post=box([-32,1.1,z],[0.18,2.2,0.18], matMetalTrim,true,true); scene.add(post); addCollider(post); }
   const tireGeo=new THREE.TorusGeometry(0.42,0.14,8,16); const tireMat=new THREE.MeshStandardMaterial({ color:0x1a1e23, roughness:0.92, metalness:0.02 });
   function tireStack(pos, n){ for(let i=0;i<n;i++){ const t=new THREE.Mesh(tireGeo, tireMat); t.position.set(pos[0],0.18+i*0.29,pos[2]); t.rotation.x=Math.PI/2; t.castShadow=true; t.receiveShadow=true; scene.add(t); } const colBox=box([pos[0],0.5+(n*0.29)/2,pos[2]],[0.9, n*0.29+0.2,0.9], new THREE.MeshStandardMaterial({visible:false}), false,false); colBox.visible=false; scene.add(colBox); addCollider(colBox); }
-  tireStack([2.5,0, -11.5],3); tireStack([18.5,0, 2.2],4); tireStack([-7.5,0, 6.8],3);
+  tireStack([2.5,0, -11.5],3); if(QUALITY.tier !== 'low'){ tireStack([18.5,0, 2.2],4); } tireStack([-7.5,0, 6.8],3);
   // ---AAA Wave3 forklift + cable reels + scaffolding — gated OFF on mobile low (saves ~32 meshes + 3 colliders)
   if(QUALITY.tier !== 'low'){
     const forkliftGroup=new THREE.Group(); forkliftGroup.position.set(-16.5,0,-8.5); forkliftGroup.rotation.y=0.35; scene.add(forkliftGroup);
@@ -447,13 +445,13 @@ export function createLevel(scene){
   // ground contact AO — larger, softer, multi-layer
   const aoMat=new THREE.MeshStandardMaterial({ color:0x0d1218, transparent:true, opacity:0.20, roughness:1 });
   const aoPlane=new THREE.Mesh(new THREE.PlaneGeometry(28,13), aoMat); aoPlane.rotation.x=-Math.PI/2; aoPlane.position.set(-14,0.012,-18); aoPlane.receiveShadow=true; scene.add(aoPlane);
-  const aoPlane2=aoPlane.clone(); aoPlane2.scale.set(0.62,1,1); aoPlane2.position.set(-18,0.012,-4.5); aoPlane2.rotation.x=-Math.PI/2; scene.add(aoPlane2);
-  const aoMat2=new THREE.MeshStandardMaterial({ color:0x0d1218, transparent:true, opacity:0.11 }); const aoWide=new THREE.Mesh(new THREE.PlaneGeometry(44,44), aoMat2); aoWide.rotation.x=-Math.PI/2; aoWide.position.set(-7,0.011,-6); scene.add(aoWide);
+  if(QUALITY.tier !== 'low'){ const aoPlane2=aoPlane.clone(); aoPlane2.scale.set(0.62,1,1); aoPlane2.position.set(-18,0.012,-4.5); aoPlane2.rotation.x=-Math.PI/2; scene.add(aoPlane2); }
+  if(QUALITY.tier !== 'low'){ const aoMat2=new THREE.MeshStandardMaterial({ color:0x0d1218, transparent:true, opacity:0.11 }); const aoWide=new THREE.Mesh(new THREE.PlaneGeometry(44,44), aoMat2); aoWide.rotation.x=-Math.PI/2; aoWide.position.set(-7,0.011,-6); scene.add(aoWide); }
   // Painted line wear — chipped
   // (line1/line2 already added earlier; add cross line)
   // Manhole cover
-  const manhole=new THREE.Mesh(new THREE.CylinderGeometry(0.52,0.52,0.04,16), new THREE.MeshStandardMaterial({ color:0x2a2f37, roughness:0.35, metalness:0.68 })); manhole.position.set(8.5,0.02,-9.5); scene.add(manhole);
-  const manholeInner=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.42,0.045,16), new THREE.MeshStandardMaterial({ color:0x1a1e24, roughness:0.62, metalness:0.52 })); manholeInner.position.set(8.5,0.022,-9.5); scene.add(manholeInner);
+  const manhole=new THREE.Mesh(new THREE.CylinderGeometry(0.52,0.52,0.04,QUALITY.tier==='low'?6:16), new THREE.MeshStandardMaterial({ color:0x2a2f37, roughness:0.35, metalness:0.68 })); manhole.position.set(8.5,0.02,-9.5); scene.add(manhole);
+  const manholeInner=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.42,0.045,QUALITY.tier==='low'?6:16), new THREE.MeshStandardMaterial({ color:0x1a1e24, roughness:0.62, metalness:0.52 })); manholeInner.position.set(8.5,0.022,-9.5); scene.add(manholeInner);
   const rawSpawns=[ new THREE.Vector3(30,0.1,20), new THREE.Vector3(-30,0.1,20), new THREE.Vector3(20,0.1,-30), new THREE.Vector3(-8,0.1,20), new THREE.Vector3(30,0.1,-8), new THREE.Vector3(-10,0.1,8)];
   rawSpawns.forEach(p=>{ let inside=false; for(let c of colliders){ if(c===ground) continue; const b=c.userData.collider; if(!b) continue; if(b.max.y < 0.6) continue; const exp=b.clone().expandByScalar(1.1); if(exp.containsPoint(new THREE.Vector3(p.x,0.5,p.z))){ inside=true; break; } } if(!inside) spawnPoints.push(p); });
   const fallbacks=[new THREE.Vector3(0,0.1,22), new THREE.Vector3(22,0.1,22), new THREE.Vector3(-22,0.1,-22)];
@@ -562,7 +560,7 @@ export function createLevel(scene){
     const fork1=new THREE.Mesh(new THREE.BoxGeometry(1.05,0.06,0.08), matMetalTrim); fork1.position.set(1.32,0.28,-0.19); fork1.castShadow=true; forklift.add(fork1);
     const fork2=fork1.clone(); fork2.position.set(1.32,0.28,0.19); forklift.add(fork2);
     const back=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.55,0.88), matMetalTrim); back.position.set(-0.82,0.95,0); forklift.add(back);
-    const wheelGeo=new THREE.CylinderGeometry(0.22,0.22,0.14,12); const wheelMat=new THREE.MeshStandardMaterial({ color:0x101418, roughness:0.92 });
+    const wheelGeo=new THREE.CylinderGeometry(0.22,0.22,0.14,QUALITY.tier==='low'?6:12); const wheelMat=new THREE.MeshStandardMaterial({ color:0x101418, roughness:0.92 });
     [[-0.65,0.22,0.42],[-0.65,0.22,-0.42],[0.65,0.22,0.42],[0.65,0.22,-0.42]].forEach(pp=>{ const w=new THREE.Mesh(wheelGeo, wheelMat); w.rotation.z=Math.PI/2; w.position.set(pp[0],pp[1],pp[2]); w.castShadow=true; forklift.add(w); });
     scene.add(forklift); forklift.updateMatrixWorld(true); const col=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.15,1.0), new THREE.MeshStandardMaterial({visible:false})); col.position.copy(forklift.position); col.position.y=0.65; col.visible=false; scene.add(col); forklift.userData.collider=new THREE.Box3().setFromObject(col); colliders.push(forklift);
   }

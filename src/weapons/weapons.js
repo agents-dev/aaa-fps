@@ -99,14 +99,14 @@ export function createWeapons(scene, camera, controls) {
   // ========================================================
   function makeWearMask(){
     // MOBILE FPS: low tier uses 128 canvas + 40% scratches/pitting (saves CPU init + GPU bump fetches)
-    const SZ = IS_LOW ? 128 : 256;
+    const SZ = IS_LOW ? 64 : 256;
     const c = document.createElement('canvas');
     c.width = SZ; c.height = SZ;
     const g = c.getContext('2d');
     // neutral mid-grey 0x808080 for bumpMap neutral (no displacement)
     g.fillStyle = '#808080'; g.fillRect(0,0,SZ,SZ);
     // micro pitting noise 2200 dots
-    for(let i=0;i<(IS_LOW?600:2200);i++){
+    for(let i=0;i<(IS_LOW?300:2200);i++){
       const x = Math.random()*SZ, y=Math.random()*SZ, r=Math.random()*0.75+0.35;
       const v = Math.random()>0.5 ? 10 : -10;
       const a = 0.07 + Math.random()*0.05;
@@ -114,7 +114,7 @@ export function createWeapons(scene, camera, controls) {
       g.fillRect(x,y,r,r);
     }
     // 120 scratch lines desktop, 32 on low (saves CPU + detail)
-    for(let i=0;i<(IS_LOW?32:120);i++){
+    for(let i=0;i<(IS_LOW?16:120);i++){
       g.lineWidth = Math.random()*0.9 + 0.32;
       g.globalAlpha = 0.16 + Math.random()*0.22;
       g.strokeStyle = Math.random()>0.5 ? 'rgba(228,228,228,0.95)' : 'rgba(62,62,62,0.9)';
@@ -170,7 +170,7 @@ export function createWeapons(scene, camera, controls) {
 
   function makeStarTexture(){
     // MOBILE FPS: low tier uses 64 canvas for star (saves memory, flash is 80ms burst anyway)
-    const SSZ = IS_LOW ? 64 : 128;
+    const SSZ = IS_LOW ? 48 : 128;
     const c = document.createElement('canvas'); c.width=SSZ; c.height=SSZ;
     const g = c.getContext('2d'); g.clearRect(0,0,128,128);
     g.clearRect(0,0,SSZ,SSZ);
@@ -539,7 +539,7 @@ export function createWeapons(scene, camera, controls) {
     }
     decal.userData.life = 4.5; decal.userData.maxLife=4.5; decal.userData.isDecal=true;
     scene.add(decal); decals.push(decal);
-    const pCount = 6;
+    const pCount = IS_LOW ? 2 : 6;
     const pGeo = new THREE.BufferGeometry();
     const posArr = new Float32Array(pCount*3);
     const velArr = [];
@@ -555,8 +555,11 @@ export function createWeapons(scene, camera, controls) {
     const points = new THREE.Points(pGeo, pMat);
     points.userData.life = 0.38; points.userData.maxLife=0.38; points.userData.vels = velArr; points.userData.isParticle=true;
     scene.add(points); particles.push(points);
-    const dust = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), new THREE.MeshBasicMaterial({ color: 0x9aa0a8, transparent:true, opacity:0.32 }));
-    dust.position.copy(point); if(normal) dust.position.addScaledVector(normal,0.008); dust.userData.life=0.14; dust.userData.maxLife=0.14; dust.userData.isImpact=true; scene.add(dust); impacts.push(dust);
+    // MOBILE FPS: skip dust sphere on low (saves one mesh + overdraw per impact)
+    if(!IS_LOW){
+      const dust = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), new THREE.MeshBasicMaterial({ color: 0x9aa0a8, transparent:true, opacity:0.32 }));
+      dust.position.copy(point); if(normal) dust.position.addScaledVector(normal,0.008); dust.userData.life=0.14; dust.userData.maxLife=0.14; dust.userData.isImpact=true; scene.add(dust); impacts.push(dust);
+    }
   }
 
   function spawnTracer(start, end, hit){
@@ -571,16 +574,19 @@ export function createWeapons(scene, camera, controls) {
     line.userData.maxLife = line.userData.life; line.userData.isTracer=true;
     scene.add(line); tracers.push(line);
     // secondary additive glow line slightly thicker faint
-    const geo2 = new THREE.BufferGeometry().setFromPoints([start.clone(), end.clone()]);
-    const mat2 = new THREE.LineBasicMaterial({ color: 0xfff6d8, transparent:true, opacity:0.28, depthWrite:false, blending: THREE.AdditiveBlending });
-    mat2.linewidth = 3; 
-    const line2 = new THREE.Line(geo2, mat2);
-    line2.userData.life = 0.038; line2.userData.maxLife=0.038; line2.userData.isTracer=true;
-    scene.add(line2); tracers.push(line2);
+    // MOBILE FPS: skip glow line on low (saves one additive draw call per shot, 80ms burst)
+    if(!IS_LOW){
+      const geo2 = new THREE.BufferGeometry().setFromPoints([start.clone(), end.clone()]);
+      const mat2 = new THREE.LineBasicMaterial({ color: 0xfff6d8, transparent:true, opacity:0.28, depthWrite:false, blending: THREE.AdditiveBlending });
+      mat2.linewidth = 3; 
+      const line2 = new THREE.Line(geo2, mat2);
+      line2.userData.life = 0.038; line2.userData.maxLife=0.038; line2.userData.isTracer=true;
+      scene.add(line2); tracers.push(line2);
+    }
   }
 
   function ejectShell(){
-    const geo = new THREE.CylinderGeometry(0.006, 0.006, 0.018, 10);
+    const geo = new THREE.CylinderGeometry(0.006, 0.006, 0.018, IS_LOW?4:10);
     const mesh = new THREE.Mesh(geo, matBrass);
     mesh.castShadow = true;
     const ejectLocal = new THREE.Vector3(0.045, -0.032, -0.10);

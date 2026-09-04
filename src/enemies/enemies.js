@@ -14,8 +14,8 @@ export function createEnemies(scene, spawnPoints, controls, weapons) {
   // ========================================================
 
   // --- Reusable geometries: head sphere, torso box, helmet, vest, limbs cylinders, rifle ---
-  const gHead = new THREE.SphereGeometry(0.19, IS_LOW?8:18, IS_LOW?6:14);
-  const gHelmetDome = new THREE.SphereGeometry(0.215, IS_LOW?8:18, IS_LOW?6:14, 0, Math.PI * 2, 0, Math.PI * 0.63);
+  const gHead = new THREE.SphereGeometry(0.19, IS_LOW?6:18, IS_LOW?4:14);
+  const gHelmetDome = new THREE.SphereGeometry(0.215, IS_LOW?6:18, IS_LOW?4:14, 0, Math.PI * 2, 0, Math.PI * 0.63);
   const gHelmetRim = new THREE.TorusGeometry(0.205, 0.018, IS_LOW?6:8, IS_LOW?12:20);
   const gVisor = new THREE.BoxGeometry(0.22, 0.06, 0.04);
   const gTorso = new THREE.BoxGeometry(0.52, 0.62, 0.30);
@@ -27,36 +27,36 @@ export function createEnemies(scene, spawnPoints, controls, weapons) {
   function capsule(r,l){ if(THREE.CapsuleGeometry) return new THREE.CapsuleGeometry(r,l,IS_LOW?4:6,IS_LOW?6:12); return new THREE.CylinderGeometry(r,r,l,IS_LOW?6:12); }
   const gArmUp = capsule(0.095, 0.26);
   const gArmLo = capsule(0.082, 0.24);
-  const gForearmTwist = new THREE.CylinderGeometry(0.062, 0.058, 0.14, 10); // forearm twist second cylinder
-  const gElbowJoint = new THREE.CylinderGeometry(0.052, 0.052, 0.034, 10); // elbow cylinder joint
+  const gForearmTwist = new THREE.CylinderGeometry(0.062, 0.058, 0.14, IS_LOW?4:10); // forearm twist second cylinder
+  const gElbowJoint = new THREE.CylinderGeometry(0.052, 0.052, 0.034, IS_LOW?4:10); // elbow cylinder joint
   const gLegUp = capsule(0.128, 0.36);
   const gLegLo = capsule(0.11, 0.34);
   const gKneeJoint = new THREE.BoxGeometry(0.14, 0.055, 0.14); // knee joint Box
-  const gHand = new THREE.SphereGeometry(0.082, IS_LOW?6:10, IS_LOW?5:8);
+  const gHand = new THREE.SphereGeometry(0.082, IS_LOW?4:10, IS_LOW?4:8);
   const gBoot = new THREE.BoxGeometry(0.17, 0.11, 0.27);
   const gRifleBody = new THREE.BoxGeometry(0.04, 0.055, 0.58);
   const gRifleMag = new THREE.BoxGeometry(0.042, 0.11, 0.10);
   const gRifleScope = new THREE.BoxGeometry(0.028, 0.028, 0.20);
   const gRifleStock = new THREE.BoxGeometry(0.05, 0.07, 0.16);
-  const gBarrel = new THREE.CylinderGeometry(0.012, 0.012, 0.36, 8);
+  const gBarrel = new THREE.CylinderGeometry(0.012, 0.012, 0.36, IS_LOW?4:8);
   const gAmmoBox = new THREE.BoxGeometry(0.24, 0.14, 0.16);
   const gMaskPlane = new THREE.PlaneGeometry(0.19, 0.12); // face mask plane
   const gElbowPad = new THREE.BoxGeometry(0.15, 0.11, 0.086); // elbow pad thickness
   const gKneePad = new THREE.BoxGeometry(0.165, 0.12, 0.095); // knee pad thickness
-  const gAntenna = new THREE.CylinderGeometry(0.004, 0.003, 0.18, 6); // chest radio antenna 0.18
+  const gAntenna = new THREE.CylinderGeometry(0.004, 0.003, 0.18, IS_LOW?3:6); // chest radio antenna 0.18
 
   // ---AAA PBR materials — COD multicam 512 + fabric weave + plate carrier MOLLE 4x4---
   function makeCamoTexture(){
-    const SZ = IS_LOW ? 256 : 512;
+    const SZ = IS_LOW ? 128 : 512;
     const c=document.createElement('canvas'); c.width=c.height=SZ; const ctx=c.getContext('2d');
     ctx.fillStyle='#4b5640'; ctx.fillRect(0,0,SZ,SZ);
     const cols=['#3e4a37','#5a6348','#3b4236','#6b7356','#2f352e','#4a5540','#5e6b52','#383e32','#6e7a5a','#3a4035'];
-    const blobCount = IS_LOW ? 40 : 120;
+    const blobCount = IS_LOW ? 20 : 120;
     for(let i=0;i<blobCount;i++){ const x=Math.random()*SZ,y=Math.random()*SZ,rx=14+Math.random()*34,ry=9+Math.random()*22; ctx.fillStyle=cols[i%cols.length]; ctx.globalAlpha=0.55+Math.random()*0.35; ctx.beginPath(); ctx.ellipse(x,y,rx,ry,Math.random()*Math.PI,0,Math.PI*2); ctx.fill(); }
-    ctx.globalAlpha=1; for(let i=0;i<(IS_LOW?800:2200);i++){ const x=Math.random()*SZ,y=Math.random()*SZ,s=Math.random()<0.5?1:1.2; ctx.fillStyle=Math.random()<0.5?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.07)'; ctx.fillRect(x,y,s,s); }
+    ctx.globalAlpha=1; for(let i=0;i<(IS_LOW?400:2200);i++){ const x=Math.random()*SZ,y=Math.random()*SZ,s=Math.random()<0.5?1:1.2; ctx.fillStyle=Math.random()<0.5?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.07)'; ctx.fillRect(x,y,s,s); }
     ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.lineWidth=0.6; for(let y=16;y<SZ;y+=16){ ctx.beginPath(); ctx.moveTo(0,y+Math.random()*2); ctx.lineTo(SZ,y+Math.random()*2); ctx.stroke(); }
     // extra multicam micro flecks
-    for(let i=0;i<(IS_LOW?300:900);i++){ const x=Math.random()*SZ,y=Math.random()*SZ; ctx.fillStyle='rgba(68,62,45,0.12)'; ctx.beginPath(); ctx.arc(x,y,0.8+Math.random()*1.4,0,Math.PI*2); ctx.fill(); }
+    for(let i=0;i<(IS_LOW?150:900);i++){ const x=Math.random()*SZ,y=Math.random()*SZ; ctx.fillStyle='rgba(68,62,45,0.12)'; ctx.beginPath(); ctx.arc(x,y,0.8+Math.random()*1.4,0,Math.PI*2); ctx.fill(); }
     const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=IS_LOW?1:8; t.repeat.set(1,1); return t;
   }
   function makeFabricBump(){
@@ -200,6 +200,8 @@ export function createEnemies(scene, spawnPoints, controls, weapons) {
     const line = new THREE.Line(geo, mat);
     line.userData.isTracer=true; line.userData.age=0; line.userData.life= hit? 0.09 : 0.07;
     scene.add(line); tracers.push(line);
+    // MOBILE FPS: skip tracer spheres/flash on low (saves 2 meshes + additive overdraw per shot, tile GPU)
+    if(IS_LOW) return;
     if(hit){
       const s=new THREE.Mesh(new THREE.SphereGeometry(0.055,6,6), new THREE.MeshBasicMaterial({color:0xff3b3b, transparent:true, opacity:0.95}));
       s.position.copy(target); s.userData.isTracer=true; s.userData.age=0; s.userData.life=0.12; s.userData.isSpark=true;
@@ -554,11 +556,11 @@ export function createEnemies(scene, spawnPoints, controls, weapons) {
       const playerPos=getPlayerPos(playerPosArg);
       const eyePos=new THREE.Vector3(playerPos.x, 1.62, playerPos.z);
       timeAcc+=dt;
-      _obstacleScan-=dt; if(_obstacleScan<=0){ _obstacles=collectObstacles(); _obstacleScan=IS_LOW?0.35:0.25; window._enemiesObstacles=_obstacles; window._obsCache=_obstacles; window._obsCacheT=performance.now(); }
+      _obstacleScan-=dt; if(_obstacleScan<=0){ _obstacles=collectObstacles(); _obstacleScan=IS_LOW?0.65:0.25; window._enemiesObstacles=_obstacles; window._obsCache=_obstacles; window._obsCacheT=performance.now(); }
       respawnTimer-=dt;
       if(respawnTimer<=0){
         const alive=enemies.filter(e=>!e.isDead).length;
-        if(alive<(IS_LOW?3:5)){ const at=pickSpawnPos(playerPos); spawnOne(at); respawnTimer=2.5; } else if(alive<(IS_LOW?4:6) && Math.random()<0.35){ const at=pickSpawnPos(playerPos); spawnOne(at); respawnTimer=2.5; } else { respawnTimer=2.5; if(alive<(IS_LOW?3:5)){ const at=pickSpawnPos(playerPos); spawnOne(at); } }
+        if(alive<(IS_LOW?2:5)){ const at=pickSpawnPos(playerPos); spawnOne(at); respawnTimer=2.5; } else if(alive<(IS_LOW?3:6) && Math.random()<0.35){ const at=pickSpawnPos(playerPos); spawnOne(at); respawnTimer=2.5; } else { respawnTimer=2.5; if(alive<(IS_LOW?2:5)){ const at=pickSpawnPos(playerPos); spawnOne(at); } }
       }
       for(let i=tracers.length-1;i>=0;i--){
         const t=tracers[i]; t.userData.age+=dt; const prog=t.userData.age/t.userData.life;
@@ -618,7 +620,7 @@ export function createEnemies(scene, spawnPoints, controls, weapons) {
 
         en.losCooldown-=dt;
         if(en.losCooldown<=0){
-          en.losCooldown=(IS_LOW?0.22:0.11)+Math.random()*(IS_LOW?0.12:0.08);
+          en.losCooldown=(IS_LOW?0.32:0.11)+Math.random()*(IS_LOW?0.16:0.08);
           const eye=new THREE.Vector3(en.group.position.x,1.50,en.group.position.z);
           en.hasLOS=hasLOS(eye, eyePos, _obstacles);
           en.distToPlayer=Math.hypot(playerPos.x-en.group.position.x, playerPos.z-en.group.position.z);
@@ -633,11 +635,13 @@ export function createEnemies(scene, spawnPoints, controls, weapons) {
           if(en.stagger<0) en.stagger=0; if(en.staggerSpin<0) en.staggerSpin=0;
         }
         // Wave4 finger curl + jaw morph spring lerp 18 (harsh 9.3->9.5 — hands read mittens vs COD trigger curl)
-        en.fingerCurl += (en.fingerCurlTarget - en.fingerCurl) * (1 - Math.exp(-18 * dt));
-        if(en.burstRemaining===0) en.fingerCurlTarget = THREE.MathUtils.lerp(en.fingerCurlTarget, 0, Math.min(1, dt*6));
-        en.jawKick = THREE.MathUtils.lerp(en.jawKick, 0, Math.min(1, dt*9));
+        // MOBILE FPS: low tier throttles finger/jaw to 9 and skips chatter (saves per-enemy lerp + sin)
+        const curlRate = IS_LOW ? 6 : 18;
+        en.fingerCurl += (en.fingerCurlTarget - en.fingerCurl) * (1 - Math.exp(-curlRate * dt));
+        if(en.burstRemaining===0) en.fingerCurlTarget = THREE.MathUtils.lerp(en.fingerCurlTarget, 0, Math.min(1, dt*(IS_LOW?2:6)));
+        en.jawKick = THREE.MathUtils.lerp(en.jawKick, 0, Math.min(1, dt*(IS_LOW?3:9)));
         // apply jaw drop 0.015 per fireKick + chatter micro
-        if(b.jaw){ const chatter = en.burstRemaining>0 ? Math.sin(timeAcc*44)*0.0021 : 0; b.jaw.position.y = 0.015 - en.jawKick*0.015 + chatter; b.jaw.rotation.x = en.jawKick*0.18; }
+        if(b.jaw){ const chatter = (!IS_LOW && en.burstRemaining>0) ? Math.sin(timeAcc*44)*0.0021 : 0; b.jaw.position.y = 0.015 - en.jawKick*0.015 + chatter; b.jaw.rotation.x = en.jawKick*0.18; }
         // finger curl 0.22 base + 0.65*curl (22 deg -> 60 deg curled) with trigger finger delta
         if(b.lFingers){ for(let fi=0;fi<b.lFingers.length;fi++){ const f=b.lFingers[fi]; f.rotation.x = 0.22 + en.fingerCurl*0.65 + (fi===1? -en.fingerCurl*0.12:0); } }
         if(b.rFingers){ for(let fi=0;fi<b.rFingers.length;fi++){ const f=b.rFingers[fi]; const base = (fi===1?0.05:0.22); f.rotation.x = base + en.fingerCurl*0.62; } }
