@@ -1,5 +1,7 @@
 # AAA FPS — COD-Level Prototype (`aaa-fps`)
 
+**🎮 Live Demo → https://agents-dev.github.io/aaa-fps/** · [Repo](https://github.com/agents-dev/aaa-fps) · `agents-dev/aaa-fps`
+
 High-fidelity first-person shooter prototype built with **Three.js** + **Vite** — pushing toward Call of Duty visual parity with adaptive performance for desktop & mobile.
 
 > Three.js 0.160 · Vite 5.4 · Procedural PBR · Forward/Deferred adaptive pipeline · Touch-ready
