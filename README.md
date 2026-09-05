@@ -22,7 +22,12 @@ High-fidelity first-person shooter prototype built with **Three.js** + **Vite** 
 | ![Mobile](screenshots/mobile.png) | ![Desktop HD](screenshots/desktop-hd.png) |
 | *390×844 — joystick + look zone + FIRE* | *1920×1080 — full fidelity, high tier* |
 
-> Screenshots captured via SwiftShader `toDataURL` on CPU host (`?capture` dpr1, no composer — avoids `glReadPixels` GPU hang, see `src/core/quality.js` `isCapture` override and `/tmp/capture.js`). Desktop 849KB (1280×720), HD 1.7MB (1920×1080), mobile 238KB (390×844). Replace with higher-fidelity GPU captures via `node /tmp/capture.js` on a GPU host if desired — no PIL mockups.
+> Screenshots captured via SwiftShader `toDataURL` on CPU host (`?capture` dpr1, no composer — avoids `glReadPixels` GPU hang, see `src/core/quality.js` `isCapture` override and `capture.js`). Desktop 840KB (1280×720), HD 1.7MB (1920×1080), mobile 241KB (390×844), thumb is a copy of desktop-menu. Replace with higher-fidelity GPU captures via `node capture.js` (set `CHROME_PATH` if needed) on a GPU host if desired — no PIL mockups.
+
+| Final verification (port 3000 `vite preview`) — Menu | Final verification — Gameplay (overlay hidden, in-combat) | Final verification — Mobile |
+|:---:|:---:|:---:|
+| ![Final Menu](screenshots/final-menu.png) | ![Final Gameplay](screenshots/final-gameplay.png) | ![Final Mobile](screenshots/final-mobile.png) |
+| *1280×720 lobby served from `dist/` on `:3000/aaa-fps/`* | *1280×720 `#center` hidden — true in-combat* | *390×844 touch tier* |
 
 ---
 
@@ -112,7 +117,7 @@ A1PlaywrightProject/
 │   ├── desktop-gameplay.png# 1280×720 in-combat
 │   ├── desktop-hd.png      # 1920×1080
 │   ├── mobile.png          # 390×844 touch
-│   └── thumb-menu.png      # 640×360 thumb
+│   └── thumb-menu.png      # copy of desktop-menu.png
 ├── AGENTS.md               # always-commit rule
 └── package.json
 ```

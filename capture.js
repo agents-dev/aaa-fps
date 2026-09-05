@@ -1,13 +1,15 @@
 import { chromium, devices } from 'playwright';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 const base = 'http://127.0.0.1:5175/aaa-fps/';
-const outDir = '/home/ubuntu/A1PlaywrightProject/screenshots';
+const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'screenshots');
 fs.mkdirSync(outDir, { recursive: true });
 
-// Use chrome binary directly (headless_shell hangs with SwiftShader flags)
-const exe = '/home/ubuntu/.cache/ms-playwright/chromium-1223/chrome-linux/chrome';
+// System chrome by default (no ms-playwright cache on CPU hosts); override via CHROME_PATH.
+// (headless_shell hangs with SwiftShader flags, so use full chrome binary directly)
+const exe = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const SWIFT_ARGS = [
   '--no-sandbox',
   '--disable-dev-shm-usage',
