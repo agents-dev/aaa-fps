@@ -117,7 +117,10 @@ A1PlaywrightProject/
 │   ├── desktop-gameplay.png# 1280×720 in-combat
 │   ├── desktop-hd.png      # 1920×1080
 │   ├── mobile.png          # 390×844 touch
-│   └── thumb-menu.png      # copy of desktop-menu.png
+│   ├── thumb-menu.png      # copy of desktop-menu.png
+│   ├── final-menu.png      # 1280×720 lobby (public URL, overlay visible)
+│   ├── final-gameplay.png  # 1280×720 in-combat (overlay hidden)
+│   └── final-mobile.png    # 390×844 touch (public URL)
 ├── AGENTS.md               # always-commit rule
 └── package.json
 ```
